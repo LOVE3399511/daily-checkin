@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日自我投资六件套</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f9f0;
+        }
+        .container {
+            background: #ffffff;
+            padding: 28px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            border: 1px solid #d6f0d6;
+        }
+        .title {
+            text-align: center;
+            font-size: 26px;
+            color: #4a7c59;
+            margin-bottom: 24px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .form-item {
+            margin-bottom: 20px;
+        }
+        .form-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #659e76;
+            font-weight: 500;
+        }
+        .form-item input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #c8e6c9;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #f8fff8;
+            color: #3d6b4a;
+        }
+        .upload-box {
+            border: 2px dashed #a7d1a8;
+            border-radius: 14px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            margin: 10px 0 20px 0;
+            color: #5a946d;
+            background: #fafefa;
+        }
+        .upload-box input {
+            display: none;
+        }
+        .preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #65b87c;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        .btn:disabled {
+            background: #a1d4b2;
+        }
+        .result-page {
+            display: none;
+            text-align: center;
+        }
+        #result-img {
+            max-width: 100%;
+            border-radius: 16px;
+            margin: 20px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .save-tip {
+            color: #659e76;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="checkin-page">
+        <div class="title">每日自我投资六件套</div>
+        <div class="form-item">
+            <label>姓名</label>
+            <input type="text" id="username" placeholder="请输入你的姓名">
+        </div>
+        <div class="form-item">
+            <label>打卡日期</label>
+            <input type="text" id="date" readonly>
+        </div>
+        <div class="form-item">
+            <label>上传打卡图片（可多张）</label>
+            <div class="upload-box" onclick="document.getElementById('upload').click()">
+                点击选择图片
+                <input type="file" id="upload" multiple accept="image/*">
+            </div>
+            <div class="preview" id="preview"></div>
+        </div>
+        <button class="btn" id="submit-btn" disabled>完成今日投资</button>
+    </div>
+
+    <div class="container result-page" id="result-page">
+        <div class="title">打卡完成</div>
+        <img id="result-img" alt="打卡记录">
+        <p class="save-tip">长按图片即可保存到相册</p>
+        <button class="btn" onclick="location.reload()">重新打卡</button>
+    </div>
+
+    <script>
+        // 获取今日日期
+        function getToday() {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 初始化
+        document.getElementById('date').value = getToday();
+
+        // 图片上传预览
+        const uploadInput = document.getElementById('upload');
+        const previewBox = document.getElementById('preview');
+        const submitBtn = document.getElementById('submit-btn');
+        let uploadFiles = [];
+
+        uploadInput.addEventListener('change', (e) => {
+            uploadFiles = Array.from(this.files);
+            previewBox.innerHTML = '';
+            
+            uploadFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    previewBox.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+            submitBtn.disabled = uploadFiles.length === 0;
+        });
+
+        // 生成打卡图片（浅绿色治愈风）
+        async function generateImage() {
+            const name = document.getElementById('username').value || '未填写姓名';
+            const date = document.getElementById('date').value;
+            const total = uploadFiles.length;
+            const perRow = 2;
+            const rows = Math.ceil(total / perRow);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const padding = 40;
+            const imgW = (800 - padding * 3) / perRow;
+            const imgH = imgW;
+            const startY = 240;
+            const canvasHeight = startY + (imgH + padding) * rows + 60;
+
+            canvas.width = 800;
+            canvas.height = canvasHeight;
+            
+            // 浅绿治愈底色
+            ctx.fillStyle = '#f8fff8';
+            ctx.fillRect(0, 0, canvas.width, canvasHeight);
+
+            // 标题
+            ctx.fillStyle = '#4a7c59';
+            ctx.font = 'bold 48px PingFang SC';
+            ctx.textAlign = 'center';
+            ctx.fillText('每日自我投资六件套', 400, 80);
+
+            // 姓名 + 日期
+            ctx.fillStyle = '#659e76';
+            ctx.font = '34px PingFang SC';
+            ctx.fillText(`${name}  ${date}`, 400, 140);
+
+            // 图片排版
+            for(let i=0; i<total; i++) {
+                const row = Math.floor(i / perRow);
+                const col = i % perRow;
+                const x = padding + col * (imgW + padding);
+                const y = startY + row * (imgH + padding);
+                const img = await loadImage(uploadFiles[i]);
+                ctx.drawImage(img, x, y, imgW, imgH);
+            }
+            
+            return canvas.toDataURL("image/jpeg", 0.92);
+        }
+
+        function loadImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // 提交打卡
+        submitBtn.addEventListener('click', async () => {
+            submitBtn.innerText = '生成中...';
+            submitBtn.disabled = true;
+            const resultImg = await generateImage();
+            document.getElementById('result-img').src = resultImg;
+            document.getElementById('checkin-page').style.display = 'none';
+            document.getElementById('result-page').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
